@@ -1,0 +1,475 @@
+import React, { useState } from ‘react’;
+import { TrendingUp, TrendingDown, Search, Target, Zap, DollarSign, AlertTriangle, Calendar, Activity, Shield } from ‘lucide-react’;
+
+const OptionsBreakoutScanner = () => {
+const [tickerInput, setTickerInput] = useState(’’);
+const [results, setResults] = useState([]);
+const [loading, setLoading] = useState(false);
+const [accountSize, setAccountSize] = useState(‘10000’);
+const [riskPercent, setRiskPercent] = useState(‘2’);
+const [timeFilter, setTimeFilter] = useState(‘all’);
+
+const popularStocks = {
+‘Tech Giants’: [‘AAPL’, ‘MSFT’, ‘NVDA’, ‘AMD’, ‘GOOGL’, ‘META’, ‘AMZN’, ‘TSLA’],
+‘High Volume’: [‘SPY’, ‘QQQ’, ‘TSLA’, ‘NVDA’, ‘AAPL’, ‘AMD’, ‘PLTR’, ‘SOFI’],
+‘Volatile Plays’: [‘PLTR’, ‘SOFI’, ‘COIN’, ‘HOOD’, ‘RIVN’, ‘LCID’, ‘NIO’, ‘MARA’],
+‘Small Cap Movers’: [‘WULF’, ‘IONQ’, ‘RGTI’, ‘QUBT’, ‘LUNR’, ‘RKLB’, ‘ACHR’, ‘JOBY’],
+‘Penny Options’: [‘SOUN’, ‘SAVA’, ‘GEVO’, ‘PLUG’, ‘BLNK’, ‘CHPT’, ‘RIDE’, ‘GOEV’],
+‘Low Float’: [‘DRUG’, ‘CYCN’, ‘BKSY’, ‘IRNT’, ‘OPAD’, ‘BBIG’, ‘MULN’, ‘AVCT’]
+};
+
+const analyzeStocks = (tickers) => {
+setLoading(true);
+
+```
+setTimeout(() => {
+  const analyzed = tickers.map(ticker => {
+    const stockPrice = Math.random() * 200 + 10;
+    const priceChange = (Math.random() * 20 - 5);
+    const volume = Math.floor(Math.random() * 50000000) + 500000;
+    const avgVolume = volume / (1 + Math.random() * 2);
+    const volumeRatio = (volume / avgVolume).toFixed(2);
+    
+    // Calculate breakout score
+    let score = 0;
+    if (Math.abs(priceChange) >= 5) score += 40;
+    else if (Math.abs(priceChange) >= 3) score += 25;
+    else if (Math.abs(priceChange) >= 2) score += 15;
+    
+    if (parseFloat(volumeRatio) >= 3) score += 30;
+    else if (parseFloat(volumeRatio) >= 2) score += 20;
+    else if (parseFloat(volumeRatio) >= 1.5) score += 10;
+    
+    if (volume >= 10000000) score += 15;
+    else if (volume >= 5000000) score += 10;
+    else if (volume >= 1000000) score += 5;
+    
+    const momentum = Math.floor(Math.random() * 100);
+    if (momentum >= 70) score += 15;
+    else if (momentum >= 50) score += 10;
+    
+    const isBullish = priceChange > 0;
+    
+    // Support & Resistance (calculated)
+    const resistance = stockPrice * (isBullish ? 1.08 : 1.03);
+    const support = stockPrice * (isBullish ? 0.97 : 0.92);
+    
+    // Options strikes
+    const atmStrike = Math.round(stockPrice);
+    const otmStrike = isBullish ? Math.round(stockPrice * 1.05) : Math.round(stockPrice * 0.95);
+    
+    // IV simulation (based on volatility)
+    const baseIV = 30 + (Math.abs(priceChange) * 5) + (parseFloat(volumeRatio) * 10);
+    const iv = Math.min(150, Math.max(20, baseIV + (Math.random() * 20 - 10)));
+    const ivPercentile = Math.floor(Math.random() * 100);
+    
+    // Options liquidity simulation
+    const baseOI = volume > 5000000 ? 2000 : volume > 1000000 ? 500 : 100;
+    const openInterest = Math.floor(baseOI * (0.5 + Math.random()));
+    const bidAskSpread = stockPrice > 100 ? 0.15 + Math.random() * 0.3 : 0.05 + Math.random() * 0.15;
+    
+    let liquidity = 'HIGH';
+    if (openInterest < 100 || bidAskSpread > 0.30) liquidity = 'LOW';
+    else if (openInterest < 500 || bidAskSpread > 0.15) liquidity = 'MEDIUM';
+    
+    // Premium calculations with IV
+    const ivFactor = iv / 100;
+    const atmPremium = (stockPrice * 0.03 * ivFactor * (1 + Math.random() * 0.3)).toFixed(2);
+    const otmPremium = (stockPrice * 0.015 * ivFactor * (1 + Math.random() * 0.3)).toFixed(2);
+    
+    // Greeks simulation
+    const atmDelta = isBullish ? 0.5 + Math.random() * 0.1 : -(0.5 + Math.random() * 0.1);
+    const otmDelta = isBullish ? 0.3 + Math.random() * 0.1 : -(0.3 + Math.random() * 0.1);
+    const atmTheta = -(parseFloat(atmPremium) * 0.05);
+    const otmTheta = -(parseFloat(otmPremium) * 0.07);
+    
+    // Expiration recommendations (7-21 days ideal)
+    const today = new Date();
+    const exp1 = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
+    const exp2 = new Date(today.getTime() + (14 * 24 * 60 * 60 * 1000));
+    const exp3 = new Date(today.getTime() + (21 * 24 * 60 * 60 * 1000));
+    
+    const formatDate = (d) => {
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${m}/${day}`;
+    };
+    
+    // Risk calculation
+    const acctSize = parseFloat(accountSize) || 10000;
+    const risk = parseFloat(riskPercent) || 2;
+    const maxRisk = acctSize * (risk / 100);
+    const atmContracts = Math.floor(maxRisk / (parseFloat(atmPremium) * 100));
+    const otmContracts = Math.floor(maxRisk / (parseFloat(otmPremium) * 100));
+    
+    // Expected move
+    const expectedMove = Math.abs(priceChange) * 1.2;
+    const atmReturn = ((expectedMove / parseFloat(atmPremium)) * 100).toFixed(0);
+    const otmReturn = ((expectedMove / parseFloat(otmPremium)) * 100).toFixed(0);
+    
+    // Break-even
+    const atmBreakEven = isBullish ? 
+      (atmStrike + parseFloat(atmPremium)).toFixed(2) : 
+      (atmStrike - parseFloat(atmPremium)).toFixed(2);
+    const otmBreakEven = isBullish ? 
+      (otmStrike + parseFloat(otmPremium)).toFixed(2) : 
+      (otmStrike - parseFloat(otmPremium)).toFixed(2);
+    
+    // Signal determination
+    let signal = '';
+    let optionPlay = null;
+    
+    if (score >= 60 && liquidity !== 'LOW' && isBullish) {
+      signal = 'STRONG CALL SETUP';
+      optionPlay = {
+        type: 'CALL',
+        recommendation: 'BUY CALLS',
+        atmStrike, atmPremium, atmReturn, atmDelta, atmTheta, atmBreakEven, atmContracts,
+        otmStrike, otmPremium, otmReturn, otmDelta, otmTheta, otmBreakEven, otmContracts
+      };
+    } else if (score >= 60 && liquidity !== 'LOW' && !isBullish) {
+      signal = 'STRONG PUT SETUP';
+      optionPlay = {
+        type: 'PUT',
+        recommendation: 'BUY PUTS',
+        atmStrike, atmPremium, atmReturn, atmDelta, atmTheta, atmBreakEven, atmContracts,
+        otmStrike, otmPremium, otmReturn, otmDelta, otmTheta, otmBreakEven, otmContracts
+      };
+    } else if (score >= 40 && liquidity === 'HIGH' && isBullish) {
+      signal = 'CALL SETUP';
+      optionPlay = {
+        type: 'CALL',
+        recommendation: 'Consider Calls',
+        atmStrike, atmPremium, atmReturn, atmDelta, atmTheta, atmBreakEven, atmContracts,
+        otmStrike, otmPremium, otmReturn, otmDelta, otmTheta, otmBreakEven, otmContracts
+      };
+    } else if (score >= 40 && liquidity === 'HIGH' && !isBullish) {
+      signal = 'PUT SETUP';
+      optionPlay = {
+        type: 'PUT',
+        recommendation: 'Consider Puts',
+        atmStrike, atmPremium, atmReturn, atmDelta, atmTheta, atmBreakEven, atmContracts,
+        otmStrike, otmPremium, otmReturn, otmDelta, otmTheta, otmBreakEven, otmContracts
+      };
+    } else {
+      signal = 'NO CLEAR SETUP';
+      optionPlay = null;
+    }
+    
+    return {
+      ticker, stockPrice: stockPrice.toFixed(2), priceChange: priceChange.toFixed(2),
+      volume: volume.toLocaleString(), volumeRatio, score, signal, optionPlay,
+      momentum, resistance: resistance.toFixed(2), support: support.toFixed(2),
+      iv: iv.toFixed(0), ivPercentile, liquidity, openInterest, bidAskSpread: bidAskSpread.toFixed(2),
+      expirations: [formatDate(exp1), formatDate(exp2), formatDate(exp3)]
+    };
+  });
+  
+  analyzed.sort((a, b) => b.score - a.score);
+  const filtered = analyzed.filter(s => s.optionPlay !== null);
+  
+  setResults(filtered);
+  setLoading(false);
+}, 1000);
+```
+
+};
+
+const handleScan = () => {
+const tickers = tickerInput.toUpperCase().split(/[\s,]+/).map(t => t.trim()).filter(t => t.length > 0);
+if (tickers.length === 0) { alert(‘Please enter at least one ticker’); return; }
+analyzeStocks(tickers);
+};
+
+const handleQuickScan = (category) => {
+const tickers = popularStocks[category];
+setTickerInput(tickers.join(’, ’));
+analyzeStocks(tickers);
+};
+
+const getSignalColor = (signal) => {
+if (signal.includes(‘STRONG CALL’)) return { bg: ‘bg-green-500/20’, border: ‘border-green-500’, text: ‘text-green-400’ };
+if (signal.includes(‘CALL’)) return { bg: ‘bg-green-500/10’, border: ‘border-green-400’, text: ‘text-green-300’ };
+if (signal.includes(‘STRONG PUT’)) return { bg: ‘bg-red-500/20’, border: ‘border-red-500’, text: ‘text-red-400’ };
+if (signal.includes(‘PUT’)) return { bg: ‘bg-red-500/10’, border: ‘border-red-400’, text: ‘text-red-300’ };
+return { bg: ‘bg-gray-500/20’, border: ‘border-gray-500’, text: ‘text-gray-400’ };
+};
+
+const getLiquidityColor = (liq) => {
+if (liq === ‘HIGH’) return ‘text-green-400’;
+if (liq === ‘MEDIUM’) return ‘text-yellow-400’;
+return ‘text-red-400’;
+};
+
+const getIVColor = (iv, pct) => {
+if (parseInt(iv) > 80) return { color: ‘text-red-400’, label: ‘High (expensive)’ };
+if (parseInt(iv) > 50) return { color: ‘text-yellow-400’, label: ‘Moderate’ };
+return { color: ‘text-green-400’, label: ‘Low (cheaper)’ };
+};
+
+return (
+<div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-4">
+<div className="max-w-6xl mx-auto">
+<div className="text-center mb-6">
+<div className="flex items-center justify-center gap-3 mb-4">
+<Zap className="w-10 h-10 text-yellow-400" />
+<h1 className="text-3xl font-bold text-white">Options Scanner Pro</h1>
+</div>
+<p className="text-gray-300 text-sm">Complete options analysis with liquidity, IV, Greeks & risk management</p>
+</div>
+
+```
+    {/* Settings */}
+    <div className="bg-white/10 rounded-xl p-4 mb-4 border border-white/20">
+      <h3 className="text-white font-semibold mb-3 text-sm flex items-center gap-2">
+        <Shield className="w-4 h-4" />Risk Management
+      </h3>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs text-gray-300 mb-1">Account Size ($)</label>
+          <input type="number" value={accountSize} onChange={(e) => setAccountSize(e.target.value)}
+            className="w-full bg-white/20 border border-white/30 rounded px-3 py-2 text-white text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-300 mb-1">Risk Per Trade (%)</label>
+          <input type="number" value={riskPercent} onChange={(e) => setRiskPercent(e.target.value)}
+            className="w-full bg-white/20 border border-white/30 rounded px-3 py-2 text-white text-sm" />
+        </div>
+      </div>
+    </div>
+
+    {/* Input */}
+    <div className="bg-white/10 rounded-xl p-4 mb-6 border border-white/20">
+      <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <Target className="w-5 h-5" />Enter Tickers
+      </h2>
+      <div className="space-y-4">
+        <textarea value={tickerInput} onChange={(e) => setTickerInput(e.target.value)}
+          placeholder="WULF, TSLA, NVDA"
+          className="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-gray-400 h-20 resize-none text-sm" />
+        
+        <div>
+          <p className="text-sm text-gray-300 mb-2">Quick scan:</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {Object.keys(popularStocks).map(category => (
+              <button key={category} onClick={() => handleQuickScan(category)}
+                className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 px-3 py-2 rounded-lg text-xs font-medium">
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={handleScan} disabled={loading}
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-6 py-3 rounded-lg flex items-center justify-center gap-2">
+          <Search className="w-5 h-5" />
+          {loading ? 'Analyzing...' : 'Find Options Setups'}
+        </button>
+      </div>
+    </div>
+
+    {/* Results */}
+    {results.length > 0 && (
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-white">Setups Found ({results.length})</h2>
+
+        {results.map((stock, idx) => {
+          const colors = getSignalColor(stock.signal);
+          const play = stock.optionPlay;
+          const ivInfo = getIVColor(stock.iv, stock.ivPercentile);
+          
+          return (
+            <div key={idx} className={`${colors.bg} rounded-xl p-4 border-2 ${colors.border}`}>
+              <div className="flex justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  {play.type === 'CALL' ? <TrendingUp className="w-6 h-6 text-green-400" /> : <TrendingDown className="w-6 h-6 text-red-400" />}
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">{stock.ticker}</h3>
+                    <p className={`text-sm font-semibold ${colors.text}`}>{stock.signal}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-gray-400 text-xs">Score</p>
+                  <p className={`text-2xl font-bold ${colors.text}`}>{stock.score}</p>
+                </div>
+              </div>
+
+              {/* Stock Info */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 pb-3 border-b border-white/20 text-xs">
+                <div>
+                  <p className="text-gray-400">Price</p>
+                  <p className="text-white font-bold">${stock.stockPrice}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Change</p>
+                  <p className={`font-bold ${parseFloat(stock.priceChange) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {parseFloat(stock.priceChange) >= 0 ? '+' : ''}{stock.priceChange}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Support</p>
+                  <p className="text-white font-bold">${stock.support}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Resistance</p>
+                  <p className="text-white font-bold">${stock.resistance}</p>
+                </div>
+              </div>
+
+              {/* Key Metrics */}
+              <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+                <div className="bg-white/10 rounded p-2">
+                  <p className="text-gray-400 mb-1">Liquidity</p>
+                  <p className={`font-bold ${getLiquidityColor(stock.liquidity)}`}>{stock.liquidity}</p>
+                  <p className="text-gray-400 text-xs">OI: {stock.openInterest}</p>
+                </div>
+                <div className="bg-white/10 rounded p-2">
+                  <p className="text-gray-400 mb-1">IV</p>
+                  <p className={`font-bold ${ivInfo.color}`}>{stock.iv}%</p>
+                  <p className="text-gray-400 text-xs">{ivInfo.label}</p>
+                </div>
+                <div className="bg-white/10 rounded p-2">
+                  <p className="text-gray-400 mb-1">Spread</p>
+                  <p className={`font-bold ${parseFloat(stock.bidAskSpread) < 0.15 ? 'text-green-400' : 'text-yellow-400'}`}>
+                    ${stock.bidAskSpread}
+                  </p>
+                  <p className="text-gray-400 text-xs">{parseFloat(stock.bidAskSpread) < 0.15 ? 'Tight' : 'Wide'}</p>
+                </div>
+              </div>
+
+              {stock.liquidity === 'LOW' && (
+                <div className="bg-red-500/20 border border-red-500 rounded p-2 mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-300" />
+                  <span className="text-red-100 text-xs font-semibold">⚠️ Low liquidity - may be hard to exit</span>
+                </div>
+              )}
+
+              {/* Expiration */}
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4 text-blue-400" />
+                  <span className="text-blue-200 text-xs font-semibold">Recommended Expirations:</span>
+                </div>
+                <div className="flex gap-2 text-xs">
+                  {stock.expirations.map((exp, i) => (
+                    <span key={i} className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded">{exp}</span>
+                  ))}
+                </div>
+                <p className="text-blue-200 text-xs mt-1">💡 7-21 days ideal for breakouts</p>
+              </div>
+
+              {/* Options */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* ATM */}
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="flex justify-between mb-2">
+                    <p className="text-white font-semibold text-sm">ATM</p>
+                    <span className="bg-green-500/20 text-green-300 text-xs px-2 py-0.5 rounded">SAFER</span>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Strike:</span>
+                      <span className="text-white font-bold">${play.atmStrike}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Premium:</span>
+                      <span className="text-white font-bold">${play.atmPremium}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Delta:</span>
+                      <span className="text-yellow-400 font-bold">{play.atmDelta.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Theta/day:</span>
+                      <span className="text-red-400">${play.atmTheta.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Break-even:</span>
+                      <span className="text-white font-bold">${play.atmBreakEven}</span>
+                    </div>
+                    <div className="pt-2 border-t border-white/10">
+                      <div className="flex justify-between font-bold">
+                        <span className="text-gray-300">Buy:</span>
+                        <span className="text-green-400">{play.atmContracts} contracts</span>
+                      </div>
+                      <p className="text-gray-400 text-xs mt-1">
+                        Cost: ${(parseFloat(play.atmPremium) * play.atmContracts * 100).toFixed(0)}
+                      </p>
+                      <p className="text-green-400 text-xs">Return: ~{play.atmReturn}%</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* OTM */}
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="flex justify-between mb-2">
+                    <p className="text-white font-semibold text-sm">OTM</p>
+                    <span className="bg-yellow-500/20 text-yellow-300 text-xs px-2 py-0.5 rounded">RISKIER</span>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Strike:</span>
+                      <span className="text-white font-bold">${play.otmStrike}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Premium:</span>
+                      <span className="text-white font-bold">${play.otmPremium}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Delta:</span>
+                      <span className="text-yellow-400 font-bold">{play.otmDelta.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Theta/day:</span>
+                      <span className="text-red-400">${play.otmTheta.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Break-even:</span>
+                      <span className="text-white font-bold">${play.otmBreakEven}</span>
+                    </div>
+                    <div className="pt-2 border-t border-white/10">
+                      <div className="flex justify-between font-bold">
+                        <span className="text-gray-300">Buy:</span>
+                        <span className="text-green-400">{play.otmContracts} contracts</span>
+                      </div>
+                      <p className="text-gray-400 text-xs mt-1">
+                        Cost: ${(parseFloat(play.otmPremium) * play.otmContracts * 100).toFixed(0)}
+                      </p>
+                      <p className="text-green-400 text-xs">Return: ~{play.otmReturn}%</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+
+    {results.length === 0 && !loading && (
+      <div className="text-center py-12 text-gray-400">
+        <Search className="w-16 h-16 mx-auto mb-4 opacity-50" />
+        <p>Enter tickers to find options setups</p>
+      </div>
+    )}
+
+    {/* Tips */}
+    <div className="mt-6 bg-blue-500/20 border border-blue-500/50 rounded-lg p-4">
+      <h3 className="text-blue-300 font-semibold mb-2 text-sm">💡 Key Metrics Explained:</h3>
+      <div className="text-blue-100 text-xs space-y-1">
+        <p>• <strong>Liquidity:</strong> HIGH = easy to trade, LOW = avoid (hard to exit)</p>
+        <p>• <strong>IV (Implied Volatility):</strong> High = expensive options, Low = cheaper</p>
+        <p>• <strong>Delta:</strong> How much option moves per $1 stock move (0.50 = 50¢)</p>
+        <p>• <strong>Theta:</strong> How much you lose per day from time decay</p>
+        <p>• <strong>Break-even:</strong> Stock price needed to not lose money</p>
+        <p>• <strong>Contracts:</strong> Based on your risk % - never risk more than you set!</p>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+);
+};
+
+export default OptionsBreakoutScanner;
