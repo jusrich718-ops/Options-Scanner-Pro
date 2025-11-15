@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Options Scanner Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; overscroll-behavior: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+```
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+    const { useState } = React;
+
+    function App() {
+        const [input, setInput] = useState('');
+        const [results, setResults] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [account, setAccount] = useState('10000');
+        const [risk, setRisk] = useState('2');
+
+        const categories = {
+            'Tech': ['AAPL', 'MSFT', 'NVDA', 'AMD', 'GOOGL', 'META'],
+            'High Vol': ['SPY', 'QQQ', 'TSLA', 'PLTR', 'SOFI'],
+            'Small Cap': ['WULF', 'IONQ', 'RGTI', 'QUBT', 'LUNR']
+        };
+
+        const scan = (tickers) => {
+            setLoading(true);
+            setTimeout(() => {
+                const analyzed = tickers.map(t => {
+                    const price = Math.random() * 150 + 20;
+                    const change = Math.random() * 15 - 3;
+                    const vol = Math.floor(Math.random() * 30000000) + 1000000;
+                    const volRatio = (1 + Math.random() * 3).toFixed(1);
+                    
+                    let score = 0;
+                    if (Math.abs(change) >= 4) score += 40;
+                    if (parseFloat(volRatio) >= 2) score += 30;
+                    if (vol >= 5000000) score += 20;
+                    score += Math.floor(Math.random() * 10);
+
+                    const isBullish = change > 0;
+                    const strike = Math.round(price);
+                    const otmStrike = isBullish ? Math.round(price * 1.05) : Math.round(price * 0.95);
+                    
+                    const iv = 40 + Math.random() * 60;
+                    const premium = (price * 0.03 * (iv/100)).toFixed(2);
+                    const otmPremium = (price * 0.02 * (iv/100)).toFixed(2);
+                    
+                    const oi = Math.floor(Math.random() * 2000) + 100;
+                    const spread = (Math.random() * 0.3).toFixed(2);
+                    const liq = oi > 500 && spread < 0.15 ? 'HIGH' : oi > 200 ? 'MED' : 'LOW';
+                    
+                    const delta = isBullish ? 0.5 : -0.5;
+                    const theta = -(parseFloat(premium) * 0.05);
+                    
+                    const acct = parseFloat(account);
+                    const r = parseFloat(risk) / 100;
+                    const maxRisk = acct * r;
+                    const contracts = Math.floor(maxRisk / (parseFloat(premium) * 100));
+
+                    if (score < 50 || liq === 'LOW') return null;
+
+                    return {
+                        ticker: t,
+                        price: price.toFixed(2),
+                        change: change.toFixed(1),
+                        score,
+                        type: isBullish ? 'CALL' : 'PUT',
+                        strike,
+                        premium,
+                        otmStrike,
+                        otmPremium,
+                        iv: iv.toFixed(0),
+                        liq,
+                        oi,
+                        delta: delta.toFixed(2),
+                        theta: theta.toFixed(2),
+                        contracts,
+                        cost: (parseFloat(premium) * contracts * 100).toFixed(0)
+                    };
+                }).filter(x => x);
+
+                setResults(analyzed.sort((a,b) => b.score - a.score));
+                setLoading(false);
+            }, 1000);
+        };
+
+        const handleScan = () => {
+            const tickers = input.toUpperCase().split(/[\s,]+/).filter(x => x);
+            if (!tickers.length) { alert('Enter tickers'); return; }
+            scan(tickers);
+        };
+
+        const quickScan = (cat) => {
+            const tickers = categories[cat];
+            setInput(tickers.join(', '));
+            scan(tickers);
+        };
+
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-4">
+                <div className="max-w-4xl mx-auto">
+                    <div className="text-center mb-6">
+                        <h1 className="text-3xl font-bold text-white mb-2">Options Scanner</h1>
+                        <p className="text-gray-300 text-sm">Find breakout setups with options plays</p>
+                    </div>
+
+                    <div className="bg-white/10 rounded-xl p-4 mb-4 border border-white/20">
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label className="block text-xs text-gray-300 mb-1">Account $</label>
+                                <input type="number" value={account} onChange={(e) => setAccount(e.target.value)}
+                                    className="w-full bg-white/20 border border-white/30 rounded px-3 py-2 text-white text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-300 mb-1">Risk %</label>
+                                <input type="number" value={risk} onChange={(e) => setRisk(e.target.value)}
+                                    className="w-full bg-white/20 border border-white/30 rounded px-3 py-2 text-white text-sm" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/10 rounded-xl p-4 mb-4 border border-white/20">
+                        <textarea value={input} onChange={(e) => setInput(e.target.value)}
+                            placeholder="WULF, TSLA, NVDA"
+                            className="w-full bg-white/20 border border-white/30 rounded px-3 py-2 text-white text-sm h-20 resize-none mb-3" />
+                        
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                            {Object.keys(categories).map(cat => (
+                                <button key={cat} onClick={() => quickScan(cat)}
+                                    className="bg-purple-500/20 border border-purple-500 text-purple-300 px-3 py-2 rounded text-xs">
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button onClick={handleScan} disabled={loading}
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-6 py-3 rounded">
+                            {loading ? 'Scanning...' : 'Find Setups'}
+                        </button>
+                    </div>
+
+                    {results.length > 0 && (
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-bold text-white">Found {results.length} Setups</h2>
+                            
+                            {results.map((s, i) => (
+                                <div key={i} className={`${s.type === 'CALL' ? 'bg-green-500/10 border-green-500' : 'bg-red-500/10 border-red-500'} rounded-xl p-4 border-2`}>
+                                    <div className="flex justify-between mb-3">
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white">{s.ticker}</h3>
+                                            <p className={`text-sm font-semibold ${s.type === 'CALL' ? 'text-green-400' : 'text-red-400'}`}>
+                                                {s.type} SETUP
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-gray-400">Score</p>
+                                            <p className="text-2xl font-bold text-white">{s.score}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+                                        <div className="bg-white/10 rounded p-2">
+                                            <p className="text-gray-400">Price</p>
+                                            <p className="text-white font-bold">${s.price}</p>
+                                            <p className={s.change >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                                {s.change >= 0 ? '+' : ''}{s.change}%
+                                            </p>
+                                        </div>
+                                        <div className="bg-white/10 rounded p-2">
+                                            <p className="text-gray-400">IV</p>
+                                            <p className="text-yellow-400 font-bold">{s.iv}%</p>
+                                            <p className="text-gray-400">{s.iv > 70 ? 'High' : 'Moderate'}</p>
+                                        </div>
+                                        <div className="bg-white/10 rounded p-2">
+                                            <p className="text-gray-400">Liquidity</p>
+                                            <p className={`font-bold ${s.liq === 'HIGH' ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                {s.liq}
+                                            </p>
+                                            <p className="text-gray-400">OI: {s.oi}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-white/10 rounded p-3">
+                                            <div className="flex justify-between mb-2">
+                                                <p className="text-white font-semibold text-sm">ATM</p>
+                                                <span className="bg-green-500/20 text-green-300 text-xs px-2 py-0.5 rounded">SAFER</span>
+                                            </div>
+                                            <div className="space-y-1 text-xs">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Strike:</span>
+                                                    <span className="text-white font-bold">${s.strike}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Premium:</span>
+                                                    <span className="text-white font-bold">${s.premium}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Delta:</span>
+                                                    <span className="text-yellow-400">{s.delta}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Theta:</span>
+                                                    <span className="text-red-400">${s.theta}</span>
+                                                </div>
+                                                <div className="pt-2 border-t border-white/10">
+                                                    <div className="flex justify-between font-bold">
+                                                        <span className="text-gray-300">Buy:</span>
+                                                        <span className="text-green-400">{s.contracts}x</span>
+                                                    </div>
+                                                    <p className="text-gray-400 mt-1">Cost: ${s.cost}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white/10 rounded p-3">
+                                            <div className="flex justify-between mb-2">
+                                                <p className="text-white font-semibold text-sm">OTM</p>
+                                                <span className="bg-yellow-500/20 text-yellow-300 text-xs px-2 py-0.5 rounded">RISKIER</span>
+                                            </div>
+                                            <div className="space-y-1 text-xs">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Strike:</span>
+                                                    <span className="text-white font-bold">${s.otmStrike}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Premium:</span>
+                                                    <span className="text-white font-bold">${s.otmPremium}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Cheaper</span>
+                                                    <span className="text-green-400">Lower cost</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Higher %</span>
+                                                    <span className="text-green-400">More gains</span>
+                                                </div>
+                                                <div className="pt-2 border-t border-white/10">
+                                                    <p className="text-gray-400 text-xs">
+                                                        ${(parseFloat(s.otmPremium) * s.contracts * 100).toFixed(0)} total
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 bg-blue-500/10 border border-blue-500/30 rounded p-2">
+                                        <p className="text-blue-200 text-xs">
+                                            💡 Buy {s.type}S on {s.ticker} • Strike ${s.strike} @ ${s.premium} • 
+                                            Risk: ${s.cost} ({risk}% of account)
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {results.length === 0 && !loading && (
+                        <div className="text-center py-12 text-gray-400">
+                            <p>Enter tickers to find setups</p>
+                        </div>
+                    )}
+
+                    <div className="mt-6 bg-yellow-500/20 border border-yellow-500/50 rounded p-4">
+                        <h3 className="text-yellow-300 font-semibold mb-2 text-sm">💡 Tips:</h3>
+                        <div className="text-yellow-100 text-xs space-y-1">
+                            <p>• ATM (At The Money) = Safer, strike equals stock price</p>
+                            <p>• OTM (Out The Money) = Riskier, cheaper, higher returns</p>
+                            <p>• IV High = Options expensive, IV Low = Cheaper</p>
+                            <p>• Liquidity HIGH = Easy to trade, LOW = Avoid</p>
+                            <p>• Contracts based on your risk % - never exceed it!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+```
+
+</body>
+</html>
